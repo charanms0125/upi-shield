@@ -1,0 +1,16 @@
+{
+  "model_name": "Multilingual NLP Scam Classifier",
+  "model_type": "TF-IDF + Calibrated Logistic Regression",
+  "accuracy": 1.0,
+  "precision": 1.0,
+  "recall": 1.0,
+  "f1_score": 1.0,
+  "confusion_matrix": {
+    "tn": 150,
+    "fp": 0,
+    "fn": 0,
+    "tp": 150
+  },
+  "training_sample_count": 1200,
+  "synthetic_disclaimer": "Performance shown is based on synthetic/demo data and does not represent production fraud-detection accuracy."
+}

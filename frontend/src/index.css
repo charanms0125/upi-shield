@@ -1,0 +1,66 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-[#0B0F19] text-slate-100 antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+}
+
+/* Custom cyber scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #0B0F19;
+}
+::-webkit-scrollbar-thumb {
+  background: #1F2937;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #374151;
+}
+
+/* Glassmorphic Cyber Panels */
+.cyber-card {
+  background: rgba(17, 24, 39, 0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1rem;
+}
+
+.cyber-card-glow {
+  background: rgba(17, 24, 39, 0.85);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(14, 165, 233, 0.25);
+  box-shadow: 0 0 25px -5px rgba(14, 165, 233, 0.15);
+  border-radius: 1rem;
+}
+
+.cyber-card-danger {
+  background: rgba(30, 15, 20, 0.85);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  box-shadow: 0 0 25px -5px rgba(239, 68, 68, 0.15);
+  border-radius: 1rem;
+}
+
+.cyber-button {
+  @apply px-4 py-2.5 rounded-lg font-medium text-sm transition-all duration-200 flex items-center justify-center gap-2;
+}
+
+.cyber-button-primary {
+  @apply cyber-button bg-cyan-600 hover:bg-cyan-500 text-white shadow-lg shadow-cyan-600/25 active:scale-95;
+}
+
+.cyber-button-danger {
+  @apply cyber-button bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-600/25 active:scale-95;
+}
+
+.cyber-button-secondary {
+  @apply cyber-button bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 active:scale-95;
+}

@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+    container_name: upi_shield_backend
+    ports:
+      - "8000:8000"
+    environment:
+      - SECRET_KEY=upishield-hackathon-demo-key-2026
+      - DATABASE_URL=sqlite:///./upi_shield.db
+    volumes:
+      - ./backend/upi_shield.db:/app/upi_shield.db
+      - ./backend/app/ml/artifacts:/app/app/ml/artifacts
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.frontend
+    container_name: upi_shield_frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
