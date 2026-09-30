@@ -78,7 +78,7 @@ A persistent **"JUDGE DEMO MODE"** toolbar is pinned at the top of the interface
 - **Frontend**: React 18, TypeScript, Vite, Tailwind CSS, Lucide React, Recharts, Canvas Confetti, React Router DOM, Axios
 - **Backend**: Python 3.10+, FastAPI, Pydantic v2, SQLAlchemy, Uvicorn
 - **AI / ML**: Scikit-Learn (TF-IDF + Logistic Regression, Isolation Forest), NetworkX
-- **Database**: SQLite (default zero-friction local run) / PostgreSQL ready
+- **Database**: MongoDB (Atlas & local cluster ready) / SQLite (zero-friction local run) / PostgreSQL
 - **Containerization**: Docker, Docker Compose
 
 ---
@@ -91,7 +91,7 @@ upi-shield/
 │   ├── app/
 │   │   ├── api/             # REST endpoints (auth, analyze, dashboard, network, reports, admin)
 │   │   ├── core/            # Config, JWT authentication, PBKDF2 cryptography
-│   │   ├── database/        # SQLAlchemy session & ORM models
+│   │   ├── database/        # SQLAlchemy session, ORM models & MongoDB connection manager
 │   │   ├── ml/              # Model training pipelines, synthetic datasets, saved artifacts
 │   │   ├── schemas/         # Pydantic v2 request/response schemas
 │   │   ├── services/        # Message, URL, UPI, QR, Anomaly, Graph, and Unified Risk Engine

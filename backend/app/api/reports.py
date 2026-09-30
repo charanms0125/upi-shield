@@ -6,6 +6,7 @@ from typing import List
 
 from app.database.session import get_db
 from app.database.models import FraudReport, Alert
+from app.database.mongodb import mongo_manager
 from app.schemas.fraud import FraudReportCreate, FraudIncidentSummary, FraudReportOut
 from app.services.upi_analyzer import upi_analyzer
 
@@ -45,9 +46,31 @@ def submit_fraud_report(payload: FraudReportCreate, db: Session = Depends(get_db
             related_entity=payload.reported_upi
         )
         db.add(alert)
+        mongo_manager.record_alert({
+            "severity": "CRITICAL",
+            "title": f"New Fraud Incident Logged ({incident_id})",
+            "description": f"User reported ₹{payload.amount_lost:,.2f} lost to {payload.reported_upi} via {payload.scam_type}.",
+            "related_entity": payload.reported_upi
+        })
 
     db.commit()
     db.refresh(report)
+
+    # Also persist to MongoDB
+    mongo_manager.record_fraud_report({
+        "incident_id": incident_id,
+        "reported_upi": payload.reported_upi,
+        "reported_phone": payload.reported_phone,
+        "transaction_ref": report.transaction_ref,
+        "amount_lost": payload.amount_lost,
+        "scam_type": payload.scam_type,
+        "description": payload.description,
+        "evidence_filename": payload.screenshot_name,
+        "status": "REPORTED",
+        "cybercrime_portal_advised": True,
+        "helpline_1930_advised": True,
+        "created_at": report.created_at
+    })
 
     return {
         "incident_id": incident_id,

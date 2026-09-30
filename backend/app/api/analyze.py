@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.database.session import get_db
 from app.database.models import RiskAssessment
+from app.database.mongodb import mongo_manager
 from app.schemas.analysis import (
     MessageAnalysisRequest, MessageAnalysisResponse,
     URLAnalysisRequest, URLAnalysisResponse,
@@ -20,14 +21,58 @@ from app.services.risk_engine import fraud_risk_engine
 
 router = APIRouter(prefix="/analyze", tags=["Risk Analysis Engine"])
 
+def _persist_assessment(
+    db: Session,
+    scan_type: str,
+    input_preview: str,
+    risk_score: float,
+    risk_category: str,
+    confidence: float,
+    scam_type: str,
+    indicators: list,
+    feature_contributions: dict,
+    recommended_action: str
+):
+    try:
+        assessment = RiskAssessment(
+            scan_type=scan_type,
+            input_preview=input_preview[:250],
+            risk_score=risk_score,
+            risk_category=risk_category,
+            confidence=confidence,
+            scam_type=scam_type,
+            indicators=indicators,
+            feature_contributions=feature_contributions,
+            recommended_action=recommended_action
+        )
+        db.add(assessment)
+        db.commit()
+    except Exception as e:
+        print(f"[SQLAlchemy] Assessment save error: {e}")
+
+    try:
+        mongo_manager.record_risk_assessment({
+            "scan_type": scan_type,
+            "input_preview": input_preview[:250],
+            "risk_score": risk_score,
+            "risk_category": risk_category,
+            "confidence": confidence,
+            "scam_type": scam_type,
+            "indicators": indicators,
+            "feature_contributions": feature_contributions,
+            "recommended_action": recommended_action
+        })
+    except Exception as e:
+        print(f"[MongoDB] Assessment save error: {e}")
+
 @router.post("/message", response_model=MessageAnalysisResponse)
 def analyze_message(payload: MessageAnalysisRequest, db: Session = Depends(get_db)):
     try:
         res = message_analyzer.analyze(payload.message, payload.language_hint)
-        # Log to DB
-        assessment = RiskAssessment(
+        _persist_assessment(
+            db=db,
             scan_type="MESSAGE",
-            input_preview=payload.message[:250],
+            input_preview=payload.message,
             risk_score=res["risk_score"],
             risk_category=res["category"],
             confidence=res["confidence"],
@@ -36,8 +81,6 @@ def analyze_message(payload: MessageAnalysisRequest, db: Session = Depends(get_d
             feature_contributions=res["feature_contributions"],
             recommended_action=res["recommendation"]
         )
-        db.add(assessment)
-        db.commit()
         return res
     except Exception as e:
         print(f"[AnalyzeMessage Error] {e}")
@@ -47,9 +90,10 @@ def analyze_message(payload: MessageAnalysisRequest, db: Session = Depends(get_d
 def analyze_url(payload: URLAnalysisRequest, db: Session = Depends(get_db)):
     try:
         res = url_analyzer.analyze(payload.url)
-        assessment = RiskAssessment(
+        _persist_assessment(
+            db=db,
             scan_type="URL",
-            input_preview=payload.url[:250],
+            input_preview=payload.url,
             risk_score=res["risk_score"],
             risk_category=res["category"],
             confidence=res["confidence"],
@@ -58,8 +102,6 @@ def analyze_url(payload: URLAnalysisRequest, db: Session = Depends(get_db)):
             feature_contributions=res["feature_contributions"],
             recommended_action=res["recommendation"]
         )
-        db.add(assessment)
-        db.commit()
         return res
     except Exception as e:
         print(f"[AnalyzeURL Error] {e}")
@@ -69,7 +111,8 @@ def analyze_url(payload: URLAnalysisRequest, db: Session = Depends(get_db)):
 def analyze_upi(payload: UPIAnalysisRequest, db: Session = Depends(get_db)):
     try:
         res = upi_analyzer.analyze(payload.upi_id, db=db)
-        assessment = RiskAssessment(
+        _persist_assessment(
+            db=db,
             scan_type="UPI",
             input_preview=payload.upi_id,
             risk_score=res["risk_score"],
@@ -80,8 +123,6 @@ def analyze_upi(payload: UPIAnalysisRequest, db: Session = Depends(get_db)):
             feature_contributions=res["feature_contributions"],
             recommended_action=res["recommendation"]
         )
-        db.add(assessment)
-        db.commit()
         return res
     except Exception as e:
         print(f"[AnalyzeUPI Error] {e}")
@@ -92,9 +133,10 @@ def analyze_qr(payload: QRAnalysisRequest, db: Session = Depends(get_db)):
     try:
         target_payload = payload.qr_data or ""
         res = qr_analyzer.analyze(target_payload, payload.image_base64)
-        assessment = RiskAssessment(
+        _persist_assessment(
+            db=db,
             scan_type="QR",
-            input_preview=target_payload[:250],
+            input_preview=target_payload,
             risk_score=res["risk_score"],
             risk_category=res["category"],
             confidence=0.90,
@@ -103,8 +145,6 @@ def analyze_qr(payload: QRAnalysisRequest, db: Session = Depends(get_db)):
             feature_contributions=res["feature_contributions"],
             recommended_action=res["recommendation"]
         )
-        db.add(assessment)
-        db.commit()
         return res
     except Exception as e:
         print(f"[AnalyzeQR Error] {e}")
@@ -131,7 +171,8 @@ def analyze_transaction(payload: TransactionAnalysisRequest, db: Session = Depen
             frequency_today=payload.transaction_frequency_today
         )
 
-        assessment = RiskAssessment(
+        _persist_assessment(
+            db=db,
             scan_type="TRANSACTION",
             input_preview=f"₹{payload.amount:,.2f} to {payload.recipient_upi} at {payload.time_str}",
             risk_score=res["risk_score"],
@@ -142,8 +183,6 @@ def analyze_transaction(payload: TransactionAnalysisRequest, db: Session = Depen
             feature_contributions=res["feature_contributions"],
             recommended_action=res["recommendation"]
         )
-        db.add(assessment)
-        db.commit()
         return res
     except Exception as e:
         print(f"[AnalyzeTransaction Error] {e}")

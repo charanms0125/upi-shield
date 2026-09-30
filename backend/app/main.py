@@ -4,7 +4,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 from app.core.config import settings
-from app.database.session import engine, Base
+from app.database.session import engine, Base, SessionLocal
+from app.database.mongodb import mongo_manager
 from app.api import auth, analyze, dashboard, network, reports, admin
 from scripts.seed_database import seed_database
 from app.ml.train_models import ARTIFACTS_DIR, train_all
@@ -30,8 +31,17 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         print(f"[UPI SHIELD] Database auto-seed note: {e}")
 
+    # Connect to MongoDB and synchronize collections
+    try:
+        if mongo_manager.connect():
+            with SessionLocal() as session:
+                mongo_manager.sync_from_sqlite(session)
+    except Exception as e:
+        print(f"[UPI SHIELD] MongoDB initialization note: {e}")
+
     yield
     print("[UPI SHIELD] Shutting down service.")
+    mongo_manager.close()
 
 app = FastAPI(
     title="🛡️ UPI SHIELD API",
@@ -63,12 +73,18 @@ app.include_router(admin.router, prefix=settings.API_V1_STR)
 
 @app.get("/api/health", tags=["Health"])
 def health_check():
+    mongo_stats = mongo_manager.get_stats()
     return {
         "status": "healthy",
         "service": "UPI SHIELD Backend",
         "version": "1.0.0",
         "mode": "DEMO / SYNTHETIC ENVIRONMENT",
+        "database": {
+            "engine": "MongoDB (Primary) + SQLite (Cache)" if mongo_manager.is_connected else "SQLite",
+            "mongodb": mongo_stats
+        },
         "active_modules": [
+            "MongoDB Database Cluster / Local Engine",
             "NLP Multilingual Scam Detector",
             "URL Phishing Heuristics",
             "UPI VPA Risk Engine",

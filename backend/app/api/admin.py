@@ -6,6 +6,7 @@ from typing import Dict, Any
 
 from app.database.session import get_db
 from app.database.models import Transaction, UPIIdentifier, FraudReport
+from app.database.mongodb import mongo_manager
 from app.schemas.admin import AdminStatisticsOut, ModelPerformanceOut
 from app.ml.train_models import ARTIFACTS_DIR, train_all
 
@@ -110,3 +111,7 @@ def retrain_models():
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Retraining error: {str(e)}")
+
+@router.get("/mongodb")
+def get_mongodb_status():
+    return mongo_manager.get_stats()

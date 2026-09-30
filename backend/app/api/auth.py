@@ -6,6 +6,7 @@ from jose import JWTError, jwt
 
 from app.database.session import get_db
 from app.database.models import User
+from app.database.mongodb import mongo_manager
 from app.schemas.auth import UserCreate, UserLogin, UserOut, Token
 from app.core.security import verify_password, get_password_hash, create_access_token
 from app.core.config import settings
@@ -60,6 +61,18 @@ def register_user(user_in: UserCreate, db: Session = Depends(get_db)):
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
+
+    mongo_manager.record_user({
+        "id": new_user.id,
+        "email": new_user.email,
+        "full_name": new_user.full_name,
+        "phone_number": new_user.phone_number,
+        "hashed_password": new_user.hashed_password,
+        "role": new_user.role,
+        "is_active": new_user.is_active,
+        "created_at": new_user.created_at,
+        "updated_at": new_user.updated_at
+    })
 
     token = create_access_token(subject=new_user.email)
     return {

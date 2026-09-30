@@ -18,6 +18,11 @@ class Settings(BaseSettings):
         "sqlite:///./upi_shield.db"
     )
     
+    # MongoDB Database
+    MONGODB_URL: str = os.getenv("MONGODB_URL", "mongodb://127.0.0.1:27017")
+    MONGODB_DB_NAME: str = os.getenv("MONGODB_DB_NAME", "upi_shield")
+    MONGODB_ENABLED: bool = os.getenv("MONGODB_ENABLED", "true").lower() in ("true", "1", "yes")
+    
     # CORS
     CORS_ORIGINS: List[str] = [
         "http://localhost:5173",
